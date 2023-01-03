@@ -21,6 +21,7 @@ public class Main {
 	
 	// Memory
 	static double [] memory;
+	static int memorySize;
 	
 	// Bus
 	static double busValue;
@@ -145,21 +146,23 @@ public class Main {
 			if (reservationStation.busy )
 			{	
 				// get values available in the bus
-				if (reservationStation.Qj==busTag)
+				if (reservationStation.Qj==busTag )
 				{
 					reservationStation.Qj=null;
 					reservationStation.Vj=busValue;
 				}
-				if (reservationStation.Qk==busTag)
+				if (reservationStation.Qk==busTag )
 				{
 					reservationStation.Qk=null;
 					reservationStation.Vk=busValue;
+					
 				}
 				
 				// if both operands are ready
-				if (reservationStation.Qj==null && reservationStation.Qk==null && reservationStation.name!=issuedStation )
+				if (reservationStation.Qj==null && reservationStation.Qk==null && reservationStation.name!=issuedStation)
 				{
 					int timeRemaining=reservationStation.timeRemaining;
+					
 					if (timeRemaining==1)
 					{
 						reservationStation.destinationValue=getExecutionResult(reservationStation);
@@ -351,7 +354,6 @@ public class Main {
 			}
 			bufferToWB.emptyBuffer();
 			logs.add("Load Buffer "+bufferToWB.name+" has written "+busValue+" on the bus and is emptied out");
-			return;
 		}
 		else if(stationToWB!=null && stationToWB.arrivalTime==minArrivalTime)
 		{
@@ -364,11 +366,78 @@ public class Main {
 			}
 			stationToWB.emptyReservationStation();
 			logs.add("Station "+stationToWB.name+" has written "+busValue+" on the bus and is emptied out");
-			return;
 		}
+		
+		updateStations();
+		
+		
 			
 	}
 	
+	
+	public static void updateStations()
+	{	
+		// update add stations
+		for (int i=0; i<addReservationStations.length;i++)
+		{	
+			ReservationStation reservationStation=addReservationStations[i];
+			if (reservationStation.busy )
+			{	
+				// get values available in the bus
+				if (reservationStation.Qj==busTag )
+				{
+					reservationStation.Qj=null;
+					reservationStation.Vj=busValue;
+				}
+				if (reservationStation.Qk==busTag )
+				{
+					reservationStation.Qk=null;
+					reservationStation.Vk=busValue;
+					
+				}
+			}
+	}
+		
+		// update mul stations
+				for (int i=0; i<mulReservationStations.length;i++)
+				{	
+					ReservationStation reservationStation=mulReservationStations[i];
+					if (reservationStation.busy )
+					{	
+						// get values available in the bus
+						if (reservationStation.Qj==busTag )
+						{
+							reservationStation.Qj=null;
+							reservationStation.Vj=busValue;
+						}
+						if (reservationStation.Qk==busTag )
+						{
+							reservationStation.Qk=null;
+							reservationStation.Vk=busValue;
+							
+						}
+					}
+			}
+				//update store
+				for (int i=0; i<storeBuffers.length;i++)
+				{
+					StoreBuffer storeBuffer=storeBuffers[i];
+					if (storeBuffer.busy)
+					{
+						// get values available in the bus
+						if (storeBuffer.Q==busTag)
+						{
+							storeBuffer.Q=null;
+							storeBuffer.V=busValue;
+						}
+						if (storeBuffer.Q==busTag)
+						{
+							storeBuffer.Q=null;
+							storeBuffer.V=busValue;
+						}
+					}
+				}
+}
 	
 	public static boolean isFinished()
 	{
@@ -394,27 +463,37 @@ public class Main {
 		Scanner s=new Scanner(System.in);
 		fillInstructionQueue();
 		
+		System.out.println("Enter latency ADD: ");
+		latencyADD=s.nextInt();
+		System.out.println("Enter latency SUB: ");
+		latencySUB=s.nextInt();
+		System.out.println("Enter latency MUL: ");
+		latencyMUL=s.nextInt();
+		System.out.println("Enter latency DIV: ");
+		latencyDIV=s.nextInt();
+		System.out.println("Enter latency LOAD: ");
+		latencyLOAD=s.nextInt();
+		System.out.println("Enter latency STORE: ");
+		latencySTORE=s.nextInt();
 		
+		System.out.println("Enter Number of ADD Reservation Stations");
+		addReservationSize=s.nextInt();
+		System.out.println("Enter Number of MUL Reservation Stations");
+		mulReservationSize=s.nextInt();
+		System.out.println("Enter Number of LOAD Buffers");
+		loadBufferSize=s.nextInt();
+		System.out.println("Enter Number of Store Buffers");
+		storeBufferSize=s.nextInt();
 		
-//		System.out.println("Enter latency ADD: ");
-//		latencyADD=s.nextInt();
-//		System.out.println("Enter latency SUB: ");
-//		latencySUB=s.nextInt();
-//		System.out.println("Enter latency MUL: ");
-//		latencyMUL=s.nextInt();
-//		System.out.println("Enter latency DIV: ");
-//		latencyDIV=s.nextInt();
-//		System.out.println("Enter latency LOAD: ");
-//		latencyLOAD=s.nextInt();
-//		System.out.println("Enter latency STORE: ");
-//		latencySTORE=s.nextInt();
+		System.out.println("Enter Memory Size");
+		memorySize=s.nextInt();
 		
-		latencyADD=3;
-		latencySUB=3;
-		latencyMUL=4;
-		latencyDIV=5;
-		latencyLOAD=5;
-		latencySTORE=1;
+//		latencyADD=3;
+//		latencySUB=3;
+//		latencyMUL=4;
+//		latencyDIV=5;
+//		latencyLOAD=5;
+//		latencySTORE=1;
 		
 		//initializing reservation stations & buffers
 		addReservationStations=new ReservationStation[addReservationSize];
@@ -437,12 +516,12 @@ public class Main {
 			regFile[i]=new Register("F"+i,i);
 		
 		// Memory
-		memory=new double[10000];
+		memory=new double[memorySize];
 		for (int i=0; i<memory.length;i++)
 			memory[i]=i;
 		
 		
-		memory[100]=15;
+		//memory[100]=15;
 		
 		
 		while (!isFinished())
@@ -507,7 +586,7 @@ public class Main {
 			System.out.println(Arrays.toString(regFile));			
 			System.out.println();
 			
-			System.out.println(memory[50]);
+			//System.out.println(memory[50]);
 			
 			System.out.println("Logs");
 			System.out.println("------------------------------------");
