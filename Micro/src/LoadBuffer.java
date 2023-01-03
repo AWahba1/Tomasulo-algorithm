@@ -50,7 +50,7 @@ public class LoadBuffer {
     
     public String toString()
     {
-    	return timeRemaining +" | "+name + " | " + " | "+busy+" | "+ effectiveAddress+" | ";
+    	return timeRemaining +" | "+name + " | " +busy+" | "+ effectiveAddress+" | ";
     }
 
 }

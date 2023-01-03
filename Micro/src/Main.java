@@ -189,10 +189,9 @@ public class Main {
 						int timeRemaining=loadBuffer.timeRemaining;
 						if (timeRemaining==0)
 						{	
-							loadBuffer.destinationValue=memory[loadBuffer.destinationIndex];
+							loadBuffer.destinationValue=memory[loadBuffer.effectiveAddress];
 							loadBuffer.timeRemaining--;
 							
-//							finishedStations.add(loadBuffer.name);
 						}
 						else // timeRem >1
 						{
@@ -217,7 +216,7 @@ public class Main {
 				{
 					storeBuffer.Q=null;
 					storeBuffer.V=busValue;
-				
+				}
 				if (storeBuffer.Q==busTag)
 				{
 					storeBuffer.Q=null;
@@ -235,15 +234,18 @@ public class Main {
 							
 //							finishedStations.add(storeBuffer.name);
 						}
-						else // timeRem >1
+						else if (timeRemaining>0) // timeRem >1
 						{
 							storeBuffer.timeRemaining--;
+						}
+						else
+						{
+							storeBuffer.emptyBuffer();
 						}
 				} 
 			}// end if
 			
 			}
-		}
 	}
 	
 	public static double getExecutionResult(ReservationStation reservationStation)
@@ -323,8 +325,10 @@ public class Main {
 				{
 					regFile[loadBuffer.destinationIndex].value=busValue;
 					regFile[loadBuffer.destinationIndex].Q=null;
+					
 				}
 				loadBuffer.emptyBuffer();
+				
 				return;
 
 			} // end if
@@ -360,25 +364,25 @@ public class Main {
 		
 		
 		
-//		System.out.println("Enter latency ADD: ");
-//		latencyADD=s.nextInt();
-//		System.out.println("Enter latency SUB: ");
-//		latencySUB=s.nextInt();
-//		System.out.println("Enter latency MUL: ");
-//		latencyMUL=s.nextInt();
-//		System.out.println("Enter latency DIV: ");
-//		latencyDIV=s.nextInt();
-//		System.out.println("Enter latency LOAD: ");
-//		latencyLOAD=s.nextInt();
-//		System.out.println("Enter latency STORE: ");
-//		latencySTORE=s.nextInt();
+		System.out.println("Enter latency ADD: ");
+		latencyADD=s.nextInt();
+		System.out.println("Enter latency SUB: ");
+		latencySUB=s.nextInt();
+		System.out.println("Enter latency MUL: ");
+		latencyMUL=s.nextInt();
+		System.out.println("Enter latency DIV: ");
+		latencyDIV=s.nextInt();
+		System.out.println("Enter latency LOAD: ");
+		latencyLOAD=s.nextInt();
+		System.out.println("Enter latency STORE: ");
+		latencySTORE=s.nextInt();
 		
-		latencyADD=3;
-		latencySUB=3;
-		latencyMUL=4;
-		latencyDIV=5;
-		latencyLOAD=5;
-		latencySTORE=6;
+//		latencyADD=3;
+//		latencySUB=3;
+//		latencyMUL=4;
+//		latencyDIV=5;
+//		latencyLOAD=5;
+//		latencySTORE=6;
 		
 		//initializing reservation stations & buffers
 		addReservationStations=new ReservationStation[addReservationSize];
@@ -402,12 +406,15 @@ public class Main {
 		
 		// Memory
 		memory=new double[10000];
+		memory[100]=15;
 		
 		
 		while (!isFinished())
 		{	
 			System.out.println("Clock Cycle "+clockCycle);
 			System.out.println("------------------------------------");
+			System.out.println("------------------------------------");
+			System.out.println();
 			
 			issuedStation=null;
 			IssueInstruction();
@@ -423,21 +430,26 @@ public class Main {
 			
 			System.out.println("Add Reservation Station");
 			System.out.println("------------------------------------");
-			System.out.println("Time Remaining | name | Type | Busy | Vj | Vk | Qj | Qk");
+			System.out.println("Time| name | Type | Busy | Vj | Vk | Qj | Qk");
 			for (ReservationStation station:addReservationStations)
 				System.out.println(station);
+			System.out.println();
 			
 			System.out.println("MUL Reservation Station");
 			System.out.println("------------------------------------");
-			System.out.println("Time Remaining | name | Type | Busy | Vj | Vk | Qj | Qk");
+			System.out.println("Time| name | Type | Busy | Vj | Vk | Qj | Qk");
 			for (ReservationStation station:mulReservationStations)
 				System.out.println(station);
 			
+			System.out.println();
+			
 			System.out.println("Load Buffers");
 			System.out.println("------------------------------------");
-			System.out.println("Time Remaining | name | busy | effectiveAddress");
+			System.out.println("Time| name | busy | effectiveAddress");
 			for (LoadBuffer buffer:loadBuffers)
 				System.out.println(buffer);
+			
+			System.out.println();
 			
 			System.out.println("Store Buffers");
 			System.out.println("------------------------------------");
@@ -445,9 +457,15 @@ public class Main {
 			for (StoreBuffer buffer:storeBuffers)
 				System.out.println(buffer);
 			
+			System.out.println();
+			
 			System.out.println("Register File");
 			System.out.println("------------------------------------");
 			System.out.println(Arrays.toString(regFile));
+			
+			System.out.println();
+			
+			System.out.println(memory[50]);
 			
 			
 			
