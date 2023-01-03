@@ -151,3 +151,12 @@ latencyDIV=5;
 latencyLOAD=5;
 latencySTORE=1;
 ```
+
+
+
+## authors
+- Omar Sherif Ali Hassan  omar.sherif@student.guc.edu.eg  49-3324 T-20
+- Ahmed Hesham Wahba      ahmed.gallal@student.guc.edu.eg 49-5423 T-20
+- Abdullah Maged		abdullah.abdelhafez mail	49-5454 T-12
+- Marwan Ashraf 		marwan.ahmedfarag		49-5622  T-12
+- Ahmed Reda Ragheb EL-Demery 	ahmed.eldemery		49-13168  T20
