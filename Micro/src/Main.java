@@ -9,13 +9,13 @@ public class Main {
 	
 	static Queue<Instruction> instructionQueue;
 	static int latencyADD, latencySUB, latencyMUL, latencyDIV, latencyLOAD, latencySTORE;
+	
 	// Stations & Buffers
 	static ReservationStation[] addReservationStations, mulReservationStations;
 	static LoadBuffer[] loadBuffers;
 	static StoreBuffer[] storeBuffers;
 	static int addReservationSize=3, mulReservationSize=2,loadBufferSize=2, storeBufferSize=2;
-	//static Queue<String> finishedStations;
-	
+
 	// Reg File
 	static Register[] regFile;
 	
@@ -28,25 +28,38 @@ public class Main {
 	
 	static int clockCycle=1;
 	
+	// to issue issue & execute in different cycles
 	public static String issuedStation=null;
+	
+	// for tracing purposes
+	static Queue<String>instructionsAssembly;
+	static String issuedInstruction=null;
+	static Queue<String>logs;
 	
 	public static void fillInstructionQueue() throws FileNotFoundException
 	{
 		File prog = new File("code.txt");
 		Scanner reader = new Scanner(prog);
 		instructionQueue=new LinkedList<Instruction>();
+		instructionsAssembly=new LinkedList<String>();
 		
 		while (reader.hasNextLine()) {
 			String instruction = reader.nextLine();
-			String[] instArray = instruction.trim().split(" ");
-			String [] operands=instArray[1].split(","); // 3 law ALU, 2 law Store aw load
+			instructionsAssembly.add(instruction);
+			String instrType=instruction.split(" ")[0];
+			String operandsString=instruction.substring(instrType.length());
+			operandsString=operandsString.replaceAll("\s", "");
 			
+
+			//String[] instArray = instruction.split(" ");
+			//String [] operands=instArray[1].trim().split(","); // 3 law ALU, 2 law Store aw load
+			String []operands=operandsString.split(",");
 			for (int i=0 ;i<operands.length;i++)
 				operands[i]=operands[i].trim();
 			
 			
 			Instruction instr=null;
-			switch(instArray[0])
+			switch(instrType)
 			{
 			case "ADD.D":instr=new Instruction(InstructionType.ADD,Integer.parseInt(operands[0].substring(1)), Integer.parseInt(operands[1].substring(1)),
 					Integer.parseInt(operands[2].substring(1)), 0); break;
@@ -86,8 +99,6 @@ public class Main {
 		case ADD:
 		{	
 			isIssued|=ReservationStation.addStation(instruction,addReservationStations,regFile, latencyADD);
-			
-//			System.out.println(Arrays.toString(addReservationStations));
 			break;
 		}
 		case SUB:{
@@ -116,20 +127,21 @@ public class Main {
 		}
 	}
 		
-		if (isIssued) instructionQueue.poll();
+		if (isIssued) {
+			instructionQueue.poll();
+			issuedInstruction=instructionsAssembly.poll();
+			
+		};
 			
 }
 	
 	public static void ExecuteALUInstruction(ReservationStation[] reservationStations)
 	{	
-		
-//		System.out.println("Da5el 3al execute "+reservationStations[0]);
-//		System.out.println("Reservation size "+reservationStations.length);
+	
 		for (int i=0; i<reservationStations.length;i++)
 		{	
 			// execute add stations
 			ReservationStation reservationStation=reservationStations[i];
-//			System.out.println("Reservation size "+reservationStations.busy);
 			if (reservationStation.busy )
 			{	
 				// get values available in the bus
@@ -144,33 +156,29 @@ public class Main {
 					reservationStation.Vk=busValue;
 				}
 				
-//				System.out.println("Qj "+reservationStation.Qj+" Qk "+reservationStation.Qk);
 				// if both operands are ready
 				if (reservationStation.Qj==null && reservationStation.Qk==null && reservationStation.name!=issuedStation )
 				{
 					int timeRemaining=reservationStation.timeRemaining;
-					if (timeRemaining==0)
+					if (timeRemaining==1)
 					{
 						reservationStation.destinationValue=getExecutionResult(reservationStation);
 						reservationStation.timeRemaining--;
-						
-//						finishedStations.add(reservationStation.name);
-						
-						//System.out.println("Inside Exercise");
-						//System.out.println(Arrays.toString(reservationStations));
-
+						logs.add("Station "+reservationStation.name +" finished execution and output is "+reservationStation.destinationValue);
 					}
-					else // timeRem >1
+					else if (timeRemaining>1) // timeRem >1
 					{	
-//						System.out.println("Time Remaining before "+reservationStation.timeRemaining);
 						reservationStation.timeRemaining--;
-//						System.out.println("Time Remaining After "+reservationStation.timeRemaining);
+						logs.add("Station "+reservationStation.name +" is currently executing");
+					}
+					else {
+						reservationStation.timeRemaining--;
+						//logs.add("Station "+reservationStation.name +" is waiting for write back");
 					}
 				}
 			} // end if
 
 		}
-//		System.out.println("5areg men execute "+reservationStations[0]);
 	}
 		
 
@@ -187,15 +195,22 @@ public class Main {
 					if (loadBuffer.name!=issuedStation)
 					{
 						int timeRemaining=loadBuffer.timeRemaining;
-						if (timeRemaining==0)
+						if (timeRemaining==1)
 						{	
 							loadBuffer.destinationValue=memory[loadBuffer.effectiveAddress];
 							loadBuffer.timeRemaining--;
-							
+							logs.add("Buffer "+loadBuffer.name +" finished execution and output is "+loadBuffer.destinationValue);	
 						}
-						else // timeRem >1
+						else if (timeRemaining>1) // timeRem >1
 						{
 							loadBuffer.timeRemaining--;
+							logs.add("Buffer "+loadBuffer.name +" is currently executing");
+
+						}
+						else
+						{
+							loadBuffer.timeRemaining--;
+							//logs.add("Buffer "+loadBuffer.name +" is waiting for write back");
 						}
 					}
 			} // end if
@@ -228,20 +243,27 @@ public class Main {
 					// if both operands are ready
 						int timeRemaining=storeBuffer.timeRemaining;
 						if (timeRemaining==0)
+						{
+							storeBuffer.emptyBuffer();
+							logs.add("Buffer "+storeBuffer.name+" is now emptied out");
+
+						}
+						if (timeRemaining==1)
 						{	
 							memory[storeBuffer.effectiveAddress]=storeBuffer.V;
 							storeBuffer.timeRemaining--;
-							
-//							finishedStations.add(storeBuffer.name);
+							logs.add("Buffer "+storeBuffer.name +" finished execution and has saved in the memory location "+storeBuffer.effectiveAddress+" value= "+storeBuffer.V);
+
 						}
-						else if (timeRemaining>0) // timeRem >1
+						else if (timeRemaining>1) // timeRem >1
 						{
 							storeBuffer.timeRemaining--;
+							logs.add("Buffer "+storeBuffer.name +" is currently executing");
 						}
-						else
-						{
-							storeBuffer.emptyBuffer();
-						}
+//						else
+//						{
+//							storeBuffer.emptyBuffer();
+//						}
 				} 
 			}// end if
 			
@@ -268,24 +290,20 @@ public class Main {
 	
 	public static void WriteBack()
 	{	
-		// Assuming a random approach if 2 or more write back in the same cycle\
+		// Assuming a random approach if 2 or more write back in the same cycle
 		
+		ReservationStation stationToWB=null;
+		LoadBuffer bufferToWB=null;
+		int minArrivalTime=Integer.MAX_VALUE;
 		// write back reservation stations
 		for (int i=0; i<addReservationStations.length;i++)
 		{	
 			// execute add stations
 			ReservationStation reservationStation=addReservationStations[i];
-			if (reservationStation.busy && reservationStation.timeRemaining<0 )
+			if (reservationStation.busy && reservationStation.timeRemaining<0 && reservationStation.arrivalTime<minArrivalTime)
 			{	
-				busValue=reservationStation.destinationValue;
-				busTag=reservationStation.name;
-				if (regFile[reservationStation.destinationIndex].Q==busTag)
-				{
-					regFile[reservationStation.destinationIndex].value=busValue;
-					regFile[reservationStation.destinationIndex].Q=null;
-				}
-				reservationStation.emptyReservationStation();
-				return;
+				minArrivalTime=reservationStation.arrivalTime;
+				stationToWB=reservationStation;
 
 			} // end if
 
@@ -296,17 +314,10 @@ public class Main {
 		{	
 			// execute add stations
 			ReservationStation reservationStation=mulReservationStations[i];
-			if (reservationStation.busy && reservationStation.timeRemaining<0)
+			if (reservationStation.busy && reservationStation.timeRemaining<0 && reservationStation.arrivalTime<minArrivalTime)
 			{	
-				busValue=reservationStation.destinationValue;
-				busTag=reservationStation.name;
-				if (regFile[reservationStation.destinationIndex].Q==busTag)
-				{
-					regFile[reservationStation.destinationIndex].value=busValue;
-					regFile[reservationStation.destinationIndex].Q=null;
-				}
-				reservationStation.emptyReservationStation();
-				return;
+				minArrivalTime=reservationStation.arrivalTime;
+				stationToWB=reservationStation;
 
 			} // end if
 
@@ -314,25 +325,46 @@ public class Main {
 		
 		// write back load buffers
 		for (int i=0; i<loadBuffers.length;i++)
-		{	
+		{		
+			
 			// execute add stations
 			LoadBuffer loadBuffer=loadBuffers[i];
-			if (loadBuffer.busy && loadBuffer.timeRemaining<0)
+			if (loadBuffer.busy && loadBuffer.timeRemaining<0 && loadBuffer.arrivalTime<minArrivalTime)
 			{	
-				busValue=loadBuffer.destinationValue;
-				busTag=loadBuffer.name;
-				if (regFile[loadBuffer.destinationIndex].Q==busTag)
-				{
-					regFile[loadBuffer.destinationIndex].value=busValue;
-					regFile[loadBuffer.destinationIndex].Q=null;
-					
-				}
-				loadBuffer.emptyBuffer();
+				minArrivalTime=loadBuffer.arrivalTime;
+				bufferToWB=loadBuffer;
 				
-				return;
 
 			} // end if
 
+		}
+		
+		if (bufferToWB!=null && bufferToWB.arrivalTime==minArrivalTime)
+		{
+			busValue=bufferToWB.destinationValue;
+			busTag=bufferToWB.name;
+			if (regFile[bufferToWB.destinationIndex].Q==busTag)
+			{
+				regFile[bufferToWB.destinationIndex].value=busValue;
+				regFile[bufferToWB.destinationIndex].Q=null;
+				
+			}
+			bufferToWB.emptyBuffer();
+			logs.add("Load Buffer "+bufferToWB.name+" has written "+busValue+" on the bus and is emptied out");
+			return;
+		}
+		else if(stationToWB!=null && stationToWB.arrivalTime==minArrivalTime)
+		{
+			busValue=stationToWB.destinationValue;
+			busTag=stationToWB.name;
+			if (regFile[stationToWB.destinationIndex].Q==busTag)
+			{
+				regFile[stationToWB.destinationIndex].value=busValue;
+				regFile[stationToWB.destinationIndex].Q=null;
+			}
+			stationToWB.emptyReservationStation();
+			logs.add("Station "+stationToWB.name+" has written "+busValue+" on the bus and is emptied out");
+			return;
 		}
 			
 	}
@@ -364,25 +396,25 @@ public class Main {
 		
 		
 		
-		System.out.println("Enter latency ADD: ");
-		latencyADD=s.nextInt();
-		System.out.println("Enter latency SUB: ");
-		latencySUB=s.nextInt();
-		System.out.println("Enter latency MUL: ");
-		latencyMUL=s.nextInt();
-		System.out.println("Enter latency DIV: ");
-		latencyDIV=s.nextInt();
-		System.out.println("Enter latency LOAD: ");
-		latencyLOAD=s.nextInt();
-		System.out.println("Enter latency STORE: ");
-		latencySTORE=s.nextInt();
+//		System.out.println("Enter latency ADD: ");
+//		latencyADD=s.nextInt();
+//		System.out.println("Enter latency SUB: ");
+//		latencySUB=s.nextInt();
+//		System.out.println("Enter latency MUL: ");
+//		latencyMUL=s.nextInt();
+//		System.out.println("Enter latency DIV: ");
+//		latencyDIV=s.nextInt();
+//		System.out.println("Enter latency LOAD: ");
+//		latencyLOAD=s.nextInt();
+//		System.out.println("Enter latency STORE: ");
+//		latencySTORE=s.nextInt();
 		
-//		latencyADD=3;
-//		latencySUB=3;
-//		latencyMUL=4;
-//		latencyDIV=5;
-//		latencyLOAD=5;
-//		latencySTORE=6;
+		latencyADD=3;
+		latencySUB=3;
+		latencyMUL=4;
+		latencyDIV=5;
+		latencyLOAD=5;
+		latencySTORE=1;
 		
 		//initializing reservation stations & buffers
 		addReservationStations=new ReservationStation[addReservationSize];
@@ -406,17 +438,24 @@ public class Main {
 		
 		// Memory
 		memory=new double[10000];
+		for (int i=0; i<memory.length;i++)
+			memory[i]=i;
+		
+		
 		memory[100]=15;
 		
 		
 		while (!isFinished())
 		{	
+			logs=new LinkedList<>();
+			
 			System.out.println("Clock Cycle "+clockCycle);
 			System.out.println("------------------------------------");
 			System.out.println("------------------------------------");
 			System.out.println();
 			
-			issuedStation=null;
+			issuedStation=null; // to allow execution in different cycle than issue
+			issuedInstruction=null; // for tracing only
 			IssueInstruction();
 			
 			ExecuteALUInstruction(addReservationStations);
@@ -428,16 +467,22 @@ public class Main {
 
 			//tracing
 			
+			System.out.println("Instruction Queue");
+			System.out.println("------------------------------------");
+			System.out.println(instructionsAssembly);
+			System.out.println(issuedInstruction!=null?issuedInstruction +" is issued at station/buffer "+issuedStation :"No instructions issued in this cycle");
+			System.out.println();
+			
 			System.out.println("Add Reservation Station");
 			System.out.println("------------------------------------");
-			System.out.println("Time| name | Type | Busy | Vj | Vk | Qj | Qk");
+			System.out.println("Time| name | Type | Busy  | Vj  | Vk  | Qj   | Qk");
 			for (ReservationStation station:addReservationStations)
 				System.out.println(station);
 			System.out.println();
 			
 			System.out.println("MUL Reservation Station");
 			System.out.println("------------------------------------");
-			System.out.println("Time| name | Type | Busy | Vj | Vk | Qj | Qk");
+			System.out.println("Time| name | Type | Busy  | Vj  | Vk  | Qj   | Qk");
 			for (ReservationStation station:mulReservationStations)
 				System.out.println(station);
 			
@@ -445,28 +490,32 @@ public class Main {
 			
 			System.out.println("Load Buffers");
 			System.out.println("------------------------------------");
-			System.out.println("Time| name | busy | effectiveAddress");
+			System.out.println("Time| name | Busy  | effectiveAddress");
 			for (LoadBuffer buffer:loadBuffers)
-				System.out.println(buffer);
-			
+				System.out.println(buffer);		
 			System.out.println();
 			
 			System.out.println("Store Buffers");
 			System.out.println("------------------------------------");
-			System.out.println("Time Remaining | name | busy | V| Q | effectiveAddress");
+			System.out.println("Time| name | Busy  |  V  |  Q   | effectiveAddress");
 			for (StoreBuffer buffer:storeBuffers)
 				System.out.println(buffer);
-			
 			System.out.println();
 			
 			System.out.println("Register File");
 			System.out.println("------------------------------------");
-			System.out.println(Arrays.toString(regFile));
-			
+			System.out.println(Arrays.toString(regFile));			
 			System.out.println();
 			
 			System.out.println(memory[50]);
 			
+			System.out.println("Logs");
+			System.out.println("------------------------------------");
+			for (String log:logs)
+			{
+				System.out.println(log);
+			}
+			System.out.println();
 			
 			
 			clockCycle++;

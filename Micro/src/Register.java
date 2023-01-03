@@ -12,6 +12,6 @@ public class Register {
 	
 	public String toString()
 	{
-		return name+"= "+value+", "+Q;
+		return "("+name+"= "+value+", "+Q+")";
 	}
 }

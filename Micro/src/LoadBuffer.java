@@ -8,6 +8,7 @@ public class LoadBuffer {
 	int timeRemaining;
     int destinationIndex;
     double destinationValue;
+    int arrivalTime;
     
     public LoadBuffer(String name)
     {
@@ -25,6 +26,7 @@ public class LoadBuffer {
 				loadBuffer.effectiveAddress=instruction.effectiveAddress;
 				loadBuffer.destinationIndex=instruction.destination;
 				loadBuffer.timeRemaining=latency;
+				loadBuffer.arrivalTime=Main.clockCycle;
 				
 				Main.issuedStation=loadBuffer.name;
 				
@@ -46,11 +48,13 @@ public class LoadBuffer {
     	this.timeRemaining=0;
     	this.destinationIndex=0;
     	this.destinationValue=0;
+    	this.arrivalTime=0;
     }
     
     public String toString()
-    {
-    	return timeRemaining +" | "+name + " | " +busy+" | "+ effectiveAddress+" | ";
+    {	
+    	String extraSpace=this.busy?" ":"";
+    	return timeRemaining +"   |  "+name + "  | " +busy+extraSpace+" | "+ effectiveAddress;
     }
 
 }

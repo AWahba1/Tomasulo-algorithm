@@ -11,6 +11,7 @@ public class ReservationStation {
 	int timeRemaining;
     int destinationIndex;
     double destinationValue;
+    int arrivalTime;
     
     public ReservationStation(String name)
     {
@@ -28,6 +29,7 @@ public class ReservationStation {
 				adderStation.instructionType=instruction.type;
 				adderStation.destinationIndex=instruction.destination;
 				adderStation.timeRemaining=latency;
+				adderStation.arrivalTime=Main.clockCycle;
 				
 				Main.issuedStation=adderStation.name;
 				
@@ -69,10 +71,12 @@ public class ReservationStation {
 		this.timeRemaining=0;
 		this.destinationIndex=0;
 		this.destinationValue=0;
+		this.arrivalTime=0;
 	}
 
     public String toString()
-    {
-    	return timeRemaining +" | "+name + " | " + instructionType + " | "+busy+" | "+ Vj+" | "+Vk+" | "+Qj+" | "+Qk+" | ";
+    {	
+    	String extraSpace=this.busy?" ":"";
+    	return timeRemaining +"   |  "+name + "  | " + instructionType +extraSpace+ " | "+busy+extraSpace+" | "+ Vj+" | "+Vk+" | "+Qj+" | "+Qk+" | ";
     }
 }

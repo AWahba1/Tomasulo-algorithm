@@ -51,7 +51,8 @@ public class StoreBuffer {
     }
     
     public String toString()
-    {
-    	return timeRemaining +" | "+name + " | " + " | "+busy+" | "+ V+" | "+ Q+" | "+ effectiveAddress+" | ";
+    {	
+    	String extraSpace=this.busy?" ":"";
+    	return timeRemaining +"   | "+name + "   | "+busy+extraSpace+" | "+ V+" | "+ Q+" | "+ effectiveAddress;
     }
 }
