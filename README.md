@@ -4,16 +4,15 @@
 - Tomasulo's algorithm is a computer architecture hardware algorithm for dynamic scheduling of instructions that allows out-of-order execution and enables more efficient use of multiple execution units. It was developed by John E. Tomasulo in 1967. The algorithm is named after him. The algorithm is used in modern superscalar processors to increase the number of instructions executed per clock cycle. It is a form of dynamic scheduling, which means that the instructions are not scheduled in the order in which they appear in the program. Instead, the instructions are scheduled dynamically, based on the availability of the execution units and the operands. The algorithm is also known as the reservation station algorithm.
 
 ### 2. Approach
-- We have done 2 projects one Java with CLI  and React with UI using typescript .
-- The Java Project Logic is more Tested and we will evaluate with it .
-- assumptions :
-  - we don't handle the clashes of the same effective address as the description allowed .
-  - we can do multiple load and store at the same time and the same effective address as the professor said .
-  - when 2 instructions write back at the same time we give the priority to the instruction according to FIFO .
-  - Reservation Stages and buffers size are dynamic depending on the input .
-  - Latencies are dynamic depending on the user input .
-  - Memory dynamic depending on the user input .
-  - number of Float Registers are 32 as like Tomasulo .
+- Assumptions :
+  - Clashes when 2 loads and stores having the same effective address are not handled.
+  - Multiple loads and stores can exedcute at the same time whether they have the same effective address or not.
+  - When 2 instructions write back at the same time, we follow a FIFO approach where the first one that was issued is the one that will write back to the bus.
+  - Reservation Stages and buffers size are dynamic depending on the input.
+  - Latencies are dynamic depending on the user input.
+  - Memory is dynamic depending on the user input.
+  - Number of Floating-Point Registers are 32.
+  - Load Instructions always take the same amount of clock cycles to execute, assuming it's always a cache miss.
 
 ### 3. Code structure
 
@@ -23,7 +22,7 @@
 - The code is divided into 7 main classes:
   - Load Buffer :
   
-  	- String name; :  representing station name
+  	- String name:  representing station name
   	- boolean busy : if it is busy an instruction execution
   	- InstructionType instructionType=InstructionType.LOAD;
   	- int effectiveAddress; : index in memory
@@ -36,79 +35,66 @@
   	- String name; :  representing station name
   	- boolean busy : if it is busy an instruction execution
   	- InstructionType instructionType=InstructionType.LOAD;
-  	- int effectiveAddress; : index in memory
-  	- int timeRemaining; : time left for execution to finish
-  	- double V; : operand value
-    - String Q; :  waiting for specific station for operand
+  	- int effectiveAddress: index in memory
+  	- int timeRemaining: time left for execution to finish
+  	- double V: operand value
+    - String Q:  waiting for specific station for operand
    
   
   - ReservationStation:
     - String name : representing station name
   	- boolean busy : if it is busy an instruction execution
-  	- InstructionType instructionType : instruction type
-  	- double Vj; : operand1 value
-  	- double Vk; : operand2 value
-  	- String Qj; : waiting for specific station for operand1
-  	- String Qk; : waiting for specific station for operand1
-  	- double A;
+  	- Instruction Type: type of the instruction that is in this station. It can be one from (ADD, SUB, MUL, DIV)
+  	- double Vj; : operand 1 value
+  	- double Vk; : operand 2 value
+  	- String Qj; : Station/Buffer that will produce this value
+  	- String Qk; : Station/Buffer that will produce this value
   	- int timeRemaining; : time left for execution to finish
     - int destinationIndex; : register index in the register file
     - double destinationValue; : value that will be written in the register file
     - int arrivalTime; : for fifo 
     -   
   - Instruction: which is the class that represents the instruction and it's attributes.
-    - InstructionType: which is the Enum that represents the instruction type.
+    - InstructionType: which is the Enum that represents the instruction type . Available types are (ADD, SUB, MUL, DIV, LOAD, STORE).
     -  Arithmetic Instruction:
-       -  source1: source register1 index
-       -  source2: source register2 index
-       -  destination: source register2 index
+       -  source1: index of the 1st source register
+       -  source2: index of the 2nd source register
+       -  destination: index of the destination register
        -  effective address : null
 
 
 
     -  Memory Instruction:
        - Store :
-         - source1: source register1 index
+         - source1: index of the source register
          -  source2: null
          -  destination : null
-         -  effective address : index in the memory
+         -  effective address : index in the memory that will get affected by the source register value.
        - Load :  
             - source1: null
             -  source2: null
-            -  destination : index of th register
-            -  effective address : index in the memory
+            -  destination : index of the register that value will be written back to
+            -  effective address : index in the memory producing the value to the destination
 
   - Register: 
-    - name
-	- value
-	- Q 
+    - name (F0 to F31)
+	- value 
+	- Q (Initially = null)
   
-  - Main: 
-    - clockcycle 
-    - instructionQueu:Queue[Instruction]
-    - issuedStation : to gurantee the instruction that is issued dont execute in the same cycle
-    - add reservation station : ReservationStation[]
-    - mul reservation station:ReservationStation[]
-  	- LoadBuffer[] loadBuffers;
-	- StoreBuffer[] storeBuffers; 
-	- Register[] regFile;
-
-    - Sequence:
-      - 1. fill the instruction queue by the user input from file we parse each instruction independently then add to instruction queue .
-      - 2.  fill the latencies by the user input .      
-
-      -  3.  Intialize the reservation stations.
-      -  4. Issue an instruction to a reservation station and make sure that it wont execute in the same cycle and start from the next cycle
-      - 5. execute functions :
-        - ExecuteALUInstruction(addReservationStations);
-  		- ExecuteALUInstruction(mulReservationStations);
-  		- ExecuteLoadInstruction(loadBuffers);
-  		- ExecuteStoreInstruction(storeBuffers);
-      - 6. write back function :
-        - store always is able to write back .
-        - based on FIFO with instruction Queue we write back the first finished instruction .
-        -  we update the stations based on the write back .
-        -  we empty the station that wrote back and make it un busy .
+  - Sequence
+      - 1. Fill the instruction queue by the user input from file we parse each instruction independently then add to instruction queue .
+      - 2.  Take input latencies of each instruction from the user.      
+      -  3.  Intialize the reservation stations with the default values.
+      -  4. Issue an instruction to a reservation station/buffer if there exists a place in the destined station/buffer while also making sure that it wont execute in the same cycle it was issued in, but the next cycle instead.
+      - 5. Execute functions :
+        - Add reservation stations execute only if both their source operands are ready (Qj & Qk is null in this case);
+  		- MUL reservation stations execute only if both their source operands are ready (Qj & Qk is null in this case);
+  		- Load Buffers executes immediately if they are busy and they don't want for any source operands since it doesn't have any so they don't listen to the bus since they are not connected to it in the 1st place.
+  		- Store buffers execute only if the source operand is available (Q is set to null and V have the register value that will be updated in the memory in the specified address). Also, store updates the memory in its last execution cycle;
+      - 6. Write Back:
+        - If several instructions want to write back, we choose the one that was issued first, following the FIFO approach.
+        -  Stations/Buffers/Reg File are updated if they are waiting for the tag on the bus (Q's are set to nulls in this case and V's are set with the value written on the bus).
+        -  Station/Buffer that just wrote back gets emptied out, leaving room for a new instruction to take its place in the next clock cycle.
 
 
 ### 4. Test Cases
@@ -144,19 +130,20 @@ SUB.D F10,F7,F1
 
 - Latencies:
 ```
-latencyADD=3;
-latencySUB=3;
-latencyMUL=4;
-latencyDIV=5;
-latencyLOAD=5;
-latencySTORE=1;
+Add Latency=3;
+SUB Latency=3;
+MUL Latency=4;
+DIV Latrncy=5;
+LOAD Latency=5;
+STORE Latency=1;
 ```
 
 
 
-## authors
-- Omar Sherif Ali Hassan  omar.sherif@student.guc.edu.eg  49-3324 T-20
-- Ahmed Hesham Wahba      ahmed.gallal@student.guc.edu.eg 49-5423 T-20
-- Abdullah Maged		abdullah.abdelhafez mail	49-5454 T-12
-- Marwan Ashraf 		marwan.ahmedfarag		49-5622  T-12
-- Ahmed Reda Ragheb EL-Demery 	ahmed.eldemery		49-13168  T20
+
+## Contributors
+- [Ahmed Wahba](https://github.com/AWahba1)
+- [Omar Sherif Ali](https://www.github.com/omar-sherif9992)
+- [Abdullah Maged](https://github.com/abdullahmaged377)
+- [Marwan Ashraf](https://github.com/Marwan-Ashraf017)
+- [Ahmed Reda](https://github.com/Ahmed-Reda-ELdemery)
