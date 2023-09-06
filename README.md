@@ -144,6 +144,6 @@ STORE Latency=1;
 ## Contributors
 - [Ahmed Wahba](https://github.com/AWahba1)
 - [Omar Sherif Ali](https://www.github.com/omar-sherif9992)
-- [Abdullah Maged](https://github.com/abdullahmaged377)
+- [Abdullah Abdelhafez](https://github.com/aahafez)
 - [Marwan Ashraf](https://github.com/Marwan-Ashraf017)
 - [Ahmed Reda](https://github.com/Ahmed-Reda-ELdemery)
